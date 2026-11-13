@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ARSENAL</title>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ARSENAL">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="description" content="Sistema pessoal de alta performance: tarefas, foco, diário e hábitos. Funciona offline; os dados ficam no seu computador.">
+  <meta name="theme-color" content="#F1EFE9">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="brand" href="#/painel" aria-label="ARSENAL, ir para o painel">
+        <img src="icon.svg" alt="" width="28" height="28">
+        <span>ARSENAL</span>
+      </a>
+      <nav class="nav" aria-label="Seções">
+        <a href="#/painel" data-nav="painel"><b>01</b><span>Painel</span></a>
+        <a href="#/tarefas" data-nav="tarefas"><b>02</b><span>Tarefas</span></a>
+        <a href="#/foco" data-nav="foco"><b>03</b><span>Foco</span></a>
+        <a href="#/diario" data-nav="diario"><b>04</b><span>Diário</span></a>
+        <a href="#/habitos" data-nav="habitos"><b>05</b><span>Hábitos</span></a>
+        <span class="nav-soon" title="Feynman, recuperação ativa, flashcards e repetição espaçada"><b>06</b><span>Academia <em>Fase 2</em></span></span>
+        <a href="#/manual" data-nav="manual" class="nav-manual"><b>?</b><span>Manual</span></a>
+        <a href="#/dados" data-nav="dados" class="nav-data"><b>⚙</b><span>Dados e backup</span></a>
+      </nav>
+      <a id="mini" class="mini" href="#/foco" hidden></a>
+    </aside>
+    <main id="main" tabindex="-1"></main>
+  </div>
+
+  <div id="launch" class="launch" hidden role="dialog" aria-label="Contagem regressiva">
+    <div class="launch-num" id="launch-num">5</div>
+    <p class="launch-hint">Clique ou Esc para cancelar</p>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
