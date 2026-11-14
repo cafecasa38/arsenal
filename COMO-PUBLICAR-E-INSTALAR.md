@@ -2,10 +2,7 @@
 
 Resumo: você publica o app **uma vez**, de graça, no **GitHub Pages**. Ele ganha um endereço como `https://seunome.github.io/arsenal/`. Em cada aparelho, você abre esse endereço e escolhe **"Instalar"** ou **"Adicionar à tela inicial"**. Pronto: ele vira um ícone, abre em tela cheia e funciona sem internet.
 
-> **Leia antes: cada aparelho tem os próprios dados.**
-> Os dados ficam guardados dentro do aparelho, não na internet. Uma tarefa criada no tablet **não aparece** no celular sozinha.
-> Para passar os dados de um aparelho para outro, use **Dados → Exportar backup** num aparelho e **Restaurar backup** no outro (por exemplo, salvando o arquivo no OneDrive).
-> Sugestão: use o **tablet como aparelho principal** e faça um backup por semana.
+> **Sobre os dados em vários aparelhos:** sem configurar nada, cada aparelho guarda os próprios dados. Para que **tudo apareça em todos os aparelhos**, ligue a sincronização seguindo o **CONFIGURAR-SINCRONIZACAO.md** (gratuito, uns 15 minutos). Sem ela, use **Dados → Exportar backup / Restaurar backup** para levar os dados de um aparelho para outro.
 
 ---
 
@@ -64,7 +61,7 @@ O `iniciar.cmd` deixa de ser necessário. Ele só servia para abrir o app localm
 | Sem internet | Funciona normalmente depois da primeira abertura. |
 | Pomodoro com a tela apagada | O tempo continua contando. Quando você volta, a sessão aparece registrada. **O alarme não toca com a tela bloqueada**, principalmente no iPad e no iPhone. Deixe a tela ligada se quiser ouvir o alarme. |
 | Arrastar tarefas na matriz | No toque, use o **⋯ → Mover para**. O arrastar foi feito para mouse. |
-| Mudar de aparelho | Faça **Exportar backup** num aparelho e **Restaurar backup** no outro. Restaurar **substitui** tudo no aparelho de destino. |
+| Mudar de aparelho | Com a sincronização ligada, é automático. Sem ela, use **Exportar backup** num aparelho e **Restaurar backup** no outro. |
 | Desinstalar o app ou limpar os dados do navegador | **Apaga os dados daquele aparelho.** Faça backup antes. |
 
 ## Como atualizar o app depois

@@ -1,7 +1,7 @@
 // Service worker: rede primeiro, cache como reserva. Assim o app sempre pega
 // a versão nova quando há internet e continua abrindo quando não há.
-const CACHE = 'arsenal-v3';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './db.js', './manual.js', './manifest.webmanifest',
+const CACHE = 'arsenal-v4';
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './db.js', './manual.js', './sync.js', './firebase-config.js', './manifest.webmanifest',
   './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -16,8 +16,21 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Módulos do Firebase (CDN oficial do Google, versão fixa no endereço): cache primeiro,
+// para a sincronização carregar mesmo sem internet. Nada mais de fora é interceptado.
+const FIREBASE_CDN = 'https://www.gstatic.com/firebasejs/';
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
+  if (req.method === 'GET' && req.url.startsWith(FIREBASE_CDN)) {
+    e.respondWith(
+      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+        return res;
+      }))
+    );
+    return;
+  }
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(
     fetch(req)

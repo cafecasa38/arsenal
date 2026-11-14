@@ -1,7 +1,10 @@
 // Camada mínima sobre o IndexedDB. Cada coleção é um object store com chave "id".
+// "tombstones" guarda as exclusões ainda não confirmadas pela nuvem (sincronização);
+// não faz parte do backup.
 const DB_NAME = 'arsenal';
-const VERSION = 1;
+const VERSION = 2;
 export const STORES = ['tasks', 'sessions', 'journal', 'habits', 'habitLogs', 'settings'];
+const ALL = [...STORES, 'tombstones'];
 
 let dbPromise;
 function open() {
@@ -10,11 +13,15 @@ function open() {
       const req = indexedDB.open(DB_NAME, VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
-        for (const s of STORES) if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: 'id' });
+        for (const s of ALL) if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: 'id' });
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        db.onversionchange = () => db.close(); // outra aba atualizou o banco: libera
+        resolve(db);
+      };
       req.onerror = () => reject(req.error);
-      req.onblocked = () => reject(new Error('Banco bloqueado por outra janela do app.'));
+      req.onblocked = () => reject(new Error('Feche as outras janelas do ARSENAL e recarregue.'));
     });
   }
   return dbPromise;
@@ -38,9 +45,9 @@ export const db = {
   get: (s, id) => run(s, 'readonly', (tx) => tx.objectStore(s).get(id)),
   put: (s, v) => run(s, 'readwrite', (tx) => { tx.objectStore(s).put(v); }),
   del: (s, id) => run(s, 'readwrite', (tx) => { tx.objectStore(s).delete(id); }),
-  // Substitui o conteúdo de todas as coleções numa única transação (usado na restauração do backup).
-  replaceAll: (data) => run(STORES, 'readwrite', (tx) => {
-    for (const s of STORES) {
+  // Substitui o conteúdo das coleções de dados numa única transação (restauração e "apagar tudo").
+  replaceAll: (data) => run(ALL, 'readwrite', (tx) => {
+    for (const s of ALL) {
       const st = tx.objectStore(s);
       st.clear();
       for (const v of data[s] || []) st.put(v);

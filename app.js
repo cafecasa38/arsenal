@@ -1,5 +1,7 @@
 import { db, STORES } from './db.js';
 import { viewManual } from './manual.js';
+import { createSync } from './sync.js';
+import { firebaseConfig } from './firebase-config.js';
 
 /* =========================================================================
    Utilidades
@@ -31,24 +33,120 @@ function toast(msg) {
    Estado (cópia em memória do IndexedDB, gravação imediata a cada mudança)
    ========================================================================= */
 const DEFAULTS = { id: 'settings', focus: 25, short: 5, long: 20, autoBreak: true, sound: true };
-const S = { tasks: [], sessions: [], journal: [], habits: [], habitLogs: [], settings: { ...DEFAULTS } };
+const LISTS = ['tasks', 'sessions', 'journal', 'habits', 'habitLogs'];
+const S = { tasks: [], sessions: [], journal: [], habits: [], habitLogs: [], settings: { ...DEFAULTS }, tombstones: [] };
+let sync = null; // controlador de sincronização (criado no init)
+let syncState = { status: 'off' };
 
 async function load() {
-  for (const k of ['tasks', 'sessions', 'journal', 'habits', 'habitLogs']) S[k] = (await db.all(k)) || [];
+  for (const k of LISTS) S[k] = (await db.all(k)) || [];
   const st = await db.get('settings', 'settings');
-  if (st) S.settings = { ...DEFAULTS, ...st };
+  S.settings = st ? { ...DEFAULTS, ...st } : { ...DEFAULTS };
+  S.tombstones = (await db.all('tombstones')) || [];
+  // Exclusões com mais de 90 dias já não importam para nenhum aparelho.
+  const old = Date.now() - 90 * 86400000;
+  for (const t of S.tombstones.filter((x) => x.u < old)) await db.del('tombstones', t.id);
+  S.tombstones = S.tombstones.filter((x) => x.u >= old);
 }
-async function save(store, obj) {
+const tombKey = (store, id) => `${store}~${id}`;
+async function dropTombstone(store, id) {
+  const k = tombKey(store, id);
+  if (!S.tombstones.some((t) => t.id === k)) return;
+  S.tombstones = S.tombstones.filter((t) => t.id !== k);
+  await db.del('tombstones', k);
+}
+// remote = true quando a mudança veio da nuvem: mantém a hora original e não reenvia.
+async function save(store, obj, remote = false) {
+  if (!remote) obj.updatedAt = Date.now();
   const arr = S[store];
   const i = arr.findIndex((x) => x.id === obj.id);
   if (i >= 0) arr[i] = obj; else arr.push(obj);
-  try { await db.put(store, obj); } catch (e) { console.error(e); toast('Erro ao gravar. Faça um backup em Dados.'); }
+  try {
+    await db.put(store, obj);
+    await dropTombstone(store, obj.id);
+  } catch (e) { console.error(e); toast('Erro ao gravar. Faça um backup em Dados.'); }
+  if (!remote) sync?.track(store, obj.id);
 }
-async function remove(store, id) {
+async function remove(store, id, remote = false) {
   S[store] = S[store].filter((x) => x.id !== id);
-  try { await db.del(store, id); } catch (e) { console.error(e); toast('Erro ao apagar.'); }
+  try {
+    await db.del(store, id);
+    if (remote) await dropTombstone(store, id);
+    else {
+      const t = { id: tombKey(store, id), s: store, i: id, u: Date.now() };
+      S.tombstones = S.tombstones.filter((x) => x.id !== t.id).concat(t);
+      await db.put('tombstones', t);
+    }
+  } catch (e) { console.error(e); toast('Erro ao apagar.'); }
+  if (!remote) sync?.track(store, id);
 }
-const saveSettings = () => db.put('settings', S.settings);
+async function saveSettings() {
+  S.settings.updatedAt = Date.now();
+  await db.put('settings', S.settings);
+  sync?.track('settings', 'settings');
+}
+
+/* ---------- Ponte com a sincronização ---------- */
+const entryOf = (s, r) => ({ s, i: r.id, u: r.updatedAt || r.createdAt || 0, d: false, v: r });
+const syncHooks = {
+  localEntries: () => [
+    ...LISTS.flatMap((s) => S[s].map((r) => entryOf(s, r))),
+    entryOf('settings', S.settings),
+    ...S.tombstones.map((t) => ({ s: t.s, i: t.i, u: t.u, d: true, v: null })),
+  ],
+  localEntry: (s, i) => {
+    if (s === 'settings') return entryOf('settings', S.settings);
+    const r = S[s]?.find((x) => x.id === i);
+    if (r) return entryOf(s, r);
+    const t = S.tombstones.find((x) => x.id === tombKey(s, i));
+    return t ? { s, i, u: t.u, d: true, v: null } : null;
+  },
+  apply: async (entries) => {
+    for (const e of entries) {
+      if (e.s === 'settings') {
+        if (e.v) { S.settings = { ...DEFAULTS, ...e.v, id: 'settings', updatedAt: e.u }; await db.put('settings', S.settings); }
+      } else if (LISTS.includes(e.s)) {
+        if (e.d) await remove(e.s, e.i, true);
+        else await save(e.s, { ...e.v, id: e.i, updatedAt: e.u }, true);
+      }
+    }
+    scheduleRender();
+  },
+  clearTombstone: (s, i) => { dropTombstone(s, i); },
+  onChange: (state) => {
+    syncState = state;
+    paintSync();
+    if (current === 'dados') scheduleRender();
+  },
+};
+
+// Não redesenha a tela enquanto a pessoa está digitando; espera ela sair do campo.
+// "Sujo" = campo de texto com conteúdo diferente do que foi desenhado (digitação não salva).
+let renderPending = false;
+const hasUnsavedTyping = () => [...document.querySelectorAll('#main input:not([type=checkbox]):not([type=radio]):not([type=file]), #main textarea')]
+  .some((el) => el.value !== el.defaultValue);
+function scheduleRender() {
+  if (hasUnsavedTyping()) { renderPending = true; return; }
+  renderPending = false;
+  render();
+}
+document.addEventListener('focusout', () => {
+  setTimeout(() => { if (renderPending) scheduleRender(); }, 0);
+});
+
+const SYNC_LABEL = {
+  loading: ['Conectando…', 'busy'], signedOut: ['Sincronização: entrar', 'idle'], syncing: ['Sincronizando…', 'busy'],
+  ok: ['Sincronizado', 'ok'], offline: ['Offline · salvo no aparelho', 'idle'], error: ['Erro de sincronização', 'err'],
+  unavailable: ['Sincronização indisponível', 'idle'],
+};
+function paintSync() {
+  const el = $('#sync-badge');
+  if (!el) return;
+  const lbl = SYNC_LABEL[syncState.status];
+  el.hidden = !lbl;
+  if (lbl) { el.textContent = lbl[0]; el.dataset.kind = lbl[1]; }
+  $('.nav-data')?.setAttribute('data-sync', lbl ? lbl[1] : '');
+}
 
 /* ---------- Consultas ---------- */
 const Q = {
@@ -540,15 +638,59 @@ function viewHabitos() {
 }
 
 /* ---------- Dados e backup ---------- */
+function syncCard() {
+  const s = syncState;
+  const err = s.error ? `<p class="sync-err">${esc(s.error)}</p>` : '';
+  if (s.status === 'off') {
+    return `<div class="card"><h2>Sincronização entre aparelhos</h2>
+      <p class="muted" style="margin-top:0">Desligada: os dados ficam só neste aparelho. Para usar o mesmo ARSENAL no tablet, no celular e no PC, siga o guia <b>CONFIGURAR-SINCRONIZACAO.md</b> (uma vez só, uns 15 minutos).</p></div>`;
+  }
+  if (s.status === 'loading') return `<div class="card"><h2>Sincronização</h2><p class="muted" style="margin:0">Conectando…</p></div>`;
+  if (s.status === 'unavailable') return `<div class="card"><h2>Sincronização</h2>${err}<p class="muted small" style="margin:0">Abra o app com internet uma vez para ativar.</p></div>`;
+  if (!s.user) {
+    return `<form class="card" data-form="sync-login" autocomplete="on">
+      <h2>Sincronização entre aparelhos</h2>
+      <p class="muted small" style="margin-top:0">Entre com a <b>mesma conta</b> em todos os aparelhos. Na primeira vez, o que já existe aqui é juntado ao que está na nuvem.</p>
+      ${err}
+      <div class="stack">
+        <label class="field"><span>E-mail</span><input type="email" name="email" required autocomplete="username" inputmode="email"></label>
+        <label class="field"><span>Senha</span><input type="password" name="password" autocomplete="current-password" minlength="6"></label>
+        <div class="row">
+          <button type="submit" class="btn primary">Entrar</button>
+          <button type="button" class="btn" data-act="sync-signup">Criar conta</button>
+          <button type="button" class="btn ghost" data-act="sync-reset">Esqueci a senha</button>
+        </div>
+        <div class="row"><button type="button" class="btn ghost" data-act="sync-google">Entrar com Google</button></div>
+      </div>
+    </form>`;
+  }
+  const label = SYNC_LABEL[s.status]?.[0] || '';
+  return `<div class="card"><h2>Sincronização</h2>
+    <p style="margin-top:0">Conectado como <b>${esc(s.user.email)}</b></p>
+    <p class="sync-line" data-kind="${SYNC_LABEL[s.status]?.[1] || ''}"><i></i>${label}${s.lastSync ? ` · última confirmação ${new Date(s.lastSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}</p>
+    ${err}
+    <div class="row"><button type="button" class="btn" data-act="sync-now">Sincronizar agora</button><button type="button" class="btn ghost" data-act="sync-out">Sair</button></div>
+    <p class="muted small" style="margin-bottom:0">Sem internet, tudo continua funcionando e é enviado quando a conexão voltar. O cronômetro em andamento é de cada aparelho.</p>
+  </div>`;
+}
+const syncForm = () => $('#main form[data-form="sync-login"]');
+async function syncAuth(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); } catch { /* a mensagem aparece no cartão */ }
+  render();
+}
+
 function viewDados() {
   const st = S.settings;
   const notif = !('Notification' in window) ? 'indisponível neste navegador' : Notification.permission === 'granted' ? 'ativadas' : Notification.permission === 'denied' ? 'bloqueadas no navegador' : 'desativadas';
   const counts = `${S.tasks.length} tarefas · ${S.sessions.length} sessões · ${S.journal.length} diários · ${S.habits.length} hábitos`;
 
   return `
-  ${head('Configuração', 'Dados e backup.', 'Tudo fica só neste computador, no armazenamento do navegador. Limpar os dados do navegador apaga o ARSENAL. Faça backup.')}
+  ${head('Configuração', 'Dados e backup.', syncState.user
+    ? 'Os dados ficam neste aparelho e uma cópia sincronizada fica na sua conta, na nuvem.'
+    : 'Os dados ficam neste aparelho, no armazenamento do navegador. Limpar os dados do navegador apaga o ARSENAL. Faça backup.')}
   <div class="grid g2">
     <div class="stack">
+      ${syncCard()}
       <div class="card">
         <h2>Backup</h2>
         <p class="muted small" style="margin-top:0">${counts}</p>
@@ -727,11 +869,32 @@ const ACT = {
     await Notification.requestPermission();
     render();
   },
+  'sync-signup': () => {
+    const f = syncForm();
+    if (!f.reportValidity()) return;
+    const email = f.elements.namedItem('email').value.trim();
+    const pass = f.elements.namedItem('password').value;
+    if (pass.length < 6) { toast('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    syncAuth(() => sync.signUp(email, pass), 'Conta criada. Sincronizando…');
+  },
+  'sync-reset': () => {
+    const email = syncForm().elements.namedItem('email').value.trim();
+    if (!email) { toast('Digite o e-mail primeiro.'); return; }
+    syncAuth(() => sync.reset(email), 'Enviamos um e-mail para redefinir a senha.');
+  },
+  'sync-google': () => syncAuth(() => sync.google()),
+  'sync-now': () => syncAuth(async () => { const r = await sync.syncNow(); if (r) toast(`Sincronizado: ${r.applied} recebido(s), ${r.pushed} enviado(s).`); }),
+  'sync-out': () => {
+    if (!confirm('Sair da sincronização? Os dados continuam neste aparelho, mas deixam de ser atualizados com os outros.')) return;
+    syncAuth(() => sync.signOut(), 'Você saiu. Os dados continuam neste aparelho.');
+  },
   wipe: async () => {
     if (!confirm('Apagar TODOS os dados do ARSENAL? Exporte um backup antes. Não dá para desfazer.')) return;
     if (prompt('Para confirmar, digite APAGAR') !== 'APAGAR') { toast('Nada foi apagado.'); return; }
-    await db.replaceAll({});
-    Object.assign(S, { tasks: [], sessions: [], journal: [], habits: [], habitLogs: [], settings: { ...DEFAULTS } });
+    // Exclui registro a registro para que a exclusão também chegue aos outros aparelhos.
+    for (const s of LISTS) for (const r of [...S[s]]) await remove(s, r.id);
+    S.settings = { ...DEFAULTS };
+    await saveSettings();
     Object.assign(T, { phase: 'focus', running: false, remaining: null, cycle: 0, taskId: null });
     persistTimer();
     toast('Dados apagados.');
@@ -758,9 +921,15 @@ const CHG = {
       if (json?.app !== 'arsenal' || !json.data) throw new Error('Arquivo não é um backup do ARSENAL.');
       const d = json.data;
       const n = `${(d.tasks || []).length} tarefas, ${(d.sessions || []).length} sessões, ${(d.journal || []).length} diários, ${(d.habits || []).length} hábitos`;
-      if (!confirm(`Restaurar backup de ${json.exportedAt?.slice(0, 10) || 'data desconhecida'} (${n})? Os dados atuais serão substituídos.`)) return;
-      await db.replaceAll(d);
+      const synced = syncState.user;
+      if (!confirm(`Restaurar backup de ${json.exportedAt?.slice(0, 10) || 'data desconhecida'} (${n})? Os dados atuais deste aparelho serão substituídos.${synced ? ' Com a sincronização ligada, o backup também é enviado à nuvem e se junta ao que já está lá.' : ''}`)) return;
+      // Os registros restaurados ganham a hora de agora para prevalecer na nuvem.
+      const now = Date.now();
+      const data = {};
+      for (const s of STORES) data[s] = (d[s] || []).map((r) => ({ ...r, updatedAt: now }));
+      await db.replaceAll(data);
       await load();
+      for (const s of [...LISTS, 'settings']) for (const r of (s === 'settings' ? [S.settings] : S[s])) sync?.track(s, r.id);
       toast('Backup restaurado.');
       render();
     } catch (e) {
@@ -772,6 +941,7 @@ const CHG = {
 };
 
 const FORM = {
+  'sync-login': (f, fd) => syncAuth(() => sync.signIn(String(fd.get('email')).trim(), String(fd.get('password')))),
   task: async (f, fd) => {
     const title = String(fd.get('title') || '').trim();
     if (!title) { f.elements.namedItem('title').focus(); return; }
@@ -885,6 +1055,9 @@ async function init() {
   }
   // Se o tempo acabou enquanto o app estava fechado, fecha a fase sem tocar alarme.
   if (T.running && T.endAt <= Date.now()) await timerComplete();
+  sync = createSync({ config: window.__arsenalTestConfig || firebaseConfig, hooks: syncHooks, backendFactory: window.__arsenalTestBackend });
+  syncState = sync.state;
+  paintSync();
   window.addEventListener('hashchange', route);
   current = '';
   route();

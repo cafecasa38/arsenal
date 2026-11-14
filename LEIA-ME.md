@@ -24,10 +24,14 @@ PWA offline baseada no PDF *O Arsenal de Alta Performance*. Sem dependências, s
 | Manual | as 14 regras com passo a passo, uso no app, dicas, vantagens, armadilhas e grau de evidência, mais uma rotina diária e semanal. As etiquetas "Regra N" de cada tela abrem a regra no manual. O botão "Imprimir ou salvar em PDF" gera a versão impressa; uma cópia pronta está em `Manual_ARSENAL.pdf` |
 | Dados | backup e restauração em JSON, CSV para Excel (separador `;`), durações do Pomodoro, notificações e classificação das regras (evidência, heurística ou metáfora) |
 
+## Sincronização entre aparelhos
+
+Opcional, pelo Firebase (Google), no plano gratuito. Fica desligada até preencher o `firebase-config.js`. Veja o **CONFIGURAR-SINCRONIZACAO.md**. O código fica em `sync.js`; os testes ficam fora desta pasta, em `../tests/`.
+
 ## Limitações conhecidas
 
 - **Avisos só funcionam com o app aberto**, mesmo minimizado. Fechado, nada toca.
-- **Limpar os dados do navegador apaga tudo.** Exporte o backup de vez em quando e guarde-o no OneDrive.
+- **Sem sincronização, limpar os dados do navegador apaga tudo.** Exporte o backup de vez em quando e guarde-o no OneDrive.
 - **O tempo de foco só conta o que você cronometra no app.** O app não vê o que acontece fora dele.
 
 ## Arquivos
