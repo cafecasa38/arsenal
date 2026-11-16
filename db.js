@@ -2,8 +2,8 @@
 // "tombstones" guarda as exclusões ainda não confirmadas pela nuvem (sincronização);
 // não faz parte do backup.
 const DB_NAME = 'arsenal';
-const VERSION = 2;
-export const STORES = ['tasks', 'sessions', 'journal', 'habits', 'habitLogs', 'settings'];
+const VERSION = 4;
+export const STORES = ['tasks', 'sessions', 'journal', 'habits', 'habitLogs', 'cards', 'notes', 'goals', 'premortems', 'reviews', 'settings'];
 const ALL = [...STORES, 'tombstones'];
 
 let dbPromise;

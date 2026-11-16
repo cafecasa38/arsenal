@@ -1,7 +1,7 @@
 // Service worker: rede primeiro, cache como reserva. Assim o app sempre pega
 // a versão nova quando há internet e continua abrindo quando não há.
-const CACHE = 'arsenal-v4';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './db.js', './manual.js', './sync.js', './firebase-config.js', './manifest.webmanifest',
+const CACHE = 'arsenal-v6';
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './db.js', './manual.js', './academia.js', './metas.js', './revisao.js', './sync.js', './firebase-config.js', './manifest.webmanifest',
   './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

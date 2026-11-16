@@ -110,8 +110,10 @@ export function errorText(err) {
      apply(entries)        -> grava no aparelho o que veio da nuvem
      clearTombstone(s, i)  -> descarta uma exclusão já enviada
      onChange(state)       -> estado mudou (para a interface) */
-export function createSync({ config, hooks, backendFactory = firebaseBackend, ns = '' }) {
-  const LS = { uid: `${ns}arsenal.sync.uid`, seen: `${ns}arsenal.sync.seen`, dirty: `${ns}arsenal.sync.dirty`, last: `${ns}arsenal.sync.last` };
+// schema: versão das coleções do app. Quando muda (coleções novas), o aparelho refaz a
+// mesclagem completa uma vez, para buscar registros que a versão antiga ignorava.
+export function createSync({ config, hooks, backendFactory = firebaseBackend, ns = '', schema = 1 }) {
+  const LS = { uid: `${ns}arsenal.sync.uid`, seen: `${ns}arsenal.sync.seen`, dirty: `${ns}arsenal.sync.dirty`, last: `${ns}arsenal.sync.last`, schema: `${ns}arsenal.sync.schema` };
   const st = { status: config ? 'loading' : 'off', user: null, lastSync: lsGet(LS.last), error: null };
   let be = null;
   let unsub = null;
@@ -156,6 +158,7 @@ export function createSync({ config, hooks, backendFactory = firebaseBackend, ns
       const seen = Math.max(lsGet(LS.seen) || 0, ...remote.map((e) => e.t));
       lsSet(LS.seen, seen);
       lsSet(LS.uid, st.user.uid);
+      lsSet(LS.schema, schema);
       st.lastSync = Date.now();
       lsSet(LS.last, st.lastSync);
       st.status = navigator.onLine === false ? 'offline' : 'ok';
@@ -200,6 +203,8 @@ export function createSync({ config, hooks, backendFactory = firebaseBackend, ns
     if (lsGet(LS.uid) !== user.uid) {
       lsSet(LS.seen, 0); // conta nova neste aparelho: mescla tudo uma vez
       await full();
+    } else if (lsGet(LS.schema) !== schema) {
+      await full(); // app atualizado com coleções novas: mescla tudo uma vez
     } else {
       st.status = 'syncing';
       emit();

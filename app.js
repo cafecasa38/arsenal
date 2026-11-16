@@ -2,6 +2,9 @@ import { db, STORES } from './db.js';
 import { viewManual } from './manual.js';
 import { createSync } from './sync.js';
 import { firebaseConfig } from './firebase-config.js';
+import { installAcademia, dueCards } from './academia.js';
+import { installMetas, listState, quarterOf } from './metas.js';
+import { installRevisao } from './revisao.js';
 
 /* =========================================================================
    Utilidades
@@ -33,8 +36,10 @@ function toast(msg) {
    Estado (cópia em memória do IndexedDB, gravação imediata a cada mudança)
    ========================================================================= */
 const DEFAULTS = { id: 'settings', focus: 25, short: 5, long: 20, autoBreak: true, sound: true };
-const LISTS = ['tasks', 'sessions', 'journal', 'habits', 'habitLogs'];
-const S = { tasks: [], sessions: [], journal: [], habits: [], habitLogs: [], settings: { ...DEFAULTS }, tombstones: [] };
+const LISTS = ['tasks', 'sessions', 'journal', 'habits', 'habitLogs', 'cards', 'notes', 'goals', 'premortems', 'reviews'];
+const S = { settings: { ...DEFAULTS }, tombstones: [] };
+for (const k of LISTS) S[k] = [];
+const SCHEMA = 4; // muda quando surgem coleções novas (ver sync.js)
 let sync = null; // controlador de sincronização (criado no init)
 let syncState = { status: 'off' };
 
@@ -378,6 +383,16 @@ const taskOptions = (selected, filter = () => true) => openTasks().filter(filter
   .map((t) => `<option value="${t.id}" ${t.id === selected ? 'selected' : ''}>${t.quadrant}· ${esc(t.title)}</option>`).join('');
 
 /* ---------- 01 Painel ---------- */
+function studyCard(today) {
+  const due = dueCards(S.cards, today).length;
+  const st = listState(S.goals.filter((g) => g.quarter === quarterOf(today)));
+  if (!S.cards.length && !S.goals.length) return `<div class="card"><div class="card-head"><h2>Revisão semanal</h2><a class="link" href="#/revisao">Abrir →</a></div><p class="muted" style="margin:0">30 minutos no fim da semana: números, diários, matriz, metas e o foco da próxima.</p></div>`;
+  return `<div class="card">
+    <div class="card-head"><h2>Estudo e metas</h2><a class="link" href="#/revisao">Revisão semanal →</a></div>
+    <div class="htoday"><span>${due ? `<b>${due}</b> cartão(ões) para revisar hoje` : 'Nenhum cartão para revisar hoje'}</span><a class="link" href="#/academia">Academia →</a></div>
+    <div class="htoday"><span>Metas do trimestre: <b>${st.doneTop}</b> de ${st.top.length || 5} concluídas</span><a class="link" href="#/metas">Metas →</a></div>
+  </div>`;
+}
 function viewPainel() {
   const today = ymd();
   const pri = openTasks().filter((t) => t.today).sort(byPriority);
@@ -409,6 +424,7 @@ function viewPainel() {
 
   return `
   ${head(`01 · ${fmtLong(today)}`, 'O que preciso fazer hoje?', 'Três prioridades, foco registrado e um minuto de reflexão à noite. O resto é ruído.')}
+  ${revisao.painelCallouts(today)}
   ${change ? `<div class="callout" style="margin-bottom:20px"><div class="t">Mudança que você decidiu ontem</div><p>${esc(change.change)}</p></div>` : ''}
   <div class="grid g4" style="margin-bottom:20px">
     <div class="card stat"><div class="v">${fmtMin(focusMin(today)).replace(' min', '<small>min</small>')}</div><div class="l">de foco hoje · ${pomosOn(today)} pomodoro(s)</div></div>
@@ -435,6 +451,7 @@ function viewPainel() {
           <button type="button" class="chk ${hDone(h.id, today) ? 'on' : ''}" data-act="hlog" data-h="${h.id}" data-d="${today}" aria-pressed="${hDone(h.id, today)}" aria-label="Marcar ${esc(h.action)}">✓</button></div>`).join('')
           : `<p class="empty">Nenhum hábito ainda. <a href="#/habitos">Criar o primeiro</a></p>`}
       </div>
+      ${studyCard(today)}
       <div class="card">
         <div class="card-head"><h2>Diário de hoje</h2><a class="link" href="#/diario">${journalToday ? 'Rever →' : 'Escrever →'}</a></div>
         <p class="muted" style="margin:0">${journalToday ? 'Feito. Ciclo fechado.' : 'Pendente. Leva uns 10 minutos, de preferência à noite.'}</p>
@@ -482,7 +499,7 @@ function viewTarefas() {
   const quick = doneToday.filter((t) => t.quick).length;
 
   return `
-  ${head('02 · Gestão de tarefas', 'Classifique cada tarefa em uma casinha.', 'Arraste entre os quadrantes ou use ⋯. Se leva menos de 2 minutos, não entra na lista: faça agora.', ['Regra 3 · Eisenhower', 'Regra 4 · 2 minutos', 'Impacto alimenta o 80/20 da Fase 3'])}
+  ${head('02 · Gestão de tarefas', 'Classifique cada tarefa em uma casinha.', 'Arraste entre os quadrantes ou use ⋯. Se leva menos de 2 minutos, não entra na lista: faça agora.', ['Regra 3 · Eisenhower', 'Regra 4 · 2 minutos', 'Regra 11 · 80/20 (na revisão semanal)'])}
   <form class="capture card" data-form="task" autocomplete="off">
     <div class="line">
       <input type="text" name="title" placeholder="Surgiu uma tarefa? Escreva aqui…" aria-label="Nova tarefa" maxlength="200">
@@ -592,7 +609,7 @@ function viewDiario() {
       <div class="row"><button type="submit" class="btn primary">Salvar diário</button></div>
     </form>
     <div class="card">
-      <div class="card-head"><h2>Registros anteriores</h2><span class="muted small">${consistency} de 30 dias</span></div>
+      <div class="card-head"><h2>Registros anteriores</h2><span class="muted small">${consistency} de 30 dias · <a class="link" href="#/revisao">Revisão semanal →</a></span></div>
       <ul class="jlist">${past.map((x) => `<li><div class="date">${fmtShort(x.date)}</div>
         ${x.good ? `<p><i style="background:var(--ok)"></i><span>${esc(x.good)}</span></p>` : ''}
         ${x.bad ? `<p><i style="background:var(--bad)"></i><span>${esc(x.bad)}</span></p>` : ''}
@@ -682,7 +699,7 @@ async function syncAuth(fn, okMsg) {
 function viewDados() {
   const st = S.settings;
   const notif = !('Notification' in window) ? 'indisponível neste navegador' : Notification.permission === 'granted' ? 'ativadas' : Notification.permission === 'denied' ? 'bloqueadas no navegador' : 'desativadas';
-  const counts = `${S.tasks.length} tarefas · ${S.sessions.length} sessões · ${S.journal.length} diários · ${S.habits.length} hábitos`;
+  const counts = `${S.tasks.length} tarefas · ${S.sessions.length} sessões · ${S.journal.length} diários · ${S.habits.length} hábitos · ${S.cards.length} cartões · ${S.goals.length} metas · ${S.premortems.length} pré-mortens`;
 
   return `
   ${head('Configuração', 'Dados e backup.', syncState.user
@@ -737,11 +754,13 @@ function viewDados() {
 /* =========================================================================
    Roteamento e renderização
    ========================================================================= */
-const VIEWS = { painel: viewPainel, tarefas: viewTarefas, foco: viewFoco, diario: viewDiario, habitos: viewHabitos, dados: viewDados, manual: viewManual };
+const VIEWS = { painel: viewPainel, tarefas: viewTarefas, foco: viewFoco, diario: viewDiario, habitos: viewHabitos, academia: (a) => academia.view(a), metas: (a) => metas.view(a), revisao: () => revisao.view(), dados: viewDados, manual: viewManual };
+const TABBED = new Set(['academia', 'metas']); // telas com abas: #/academia/feynman etc.
 let current = 'painel';
+let currentAnchor = '';
 function render() {
   const main = $('#main');
-  main.innerHTML = VIEWS[current]();
+  main.innerHTML = VIEWS[current](currentAnchor);
   document.querySelectorAll('[data-nav]').forEach((a) => {
     const on = a.dataset.nav === current;
     a.classList.toggle('active', on);
@@ -752,10 +771,11 @@ function render() {
 }
 function route() {
   // Formato: #/tela ou #/tela/âncora (ex.: #/manual/3 abre o manual na regra 3).
-  const [v = 'painel', anchor] = location.hash.replace(/^#\/?/, '').split('/');
+  const [v = 'painel', anchor = ''] = location.hash.replace(/^#\/?/, '').split('/');
   const next = VIEWS[v] ? v : 'painel';
-  const changed = next !== current;
+  const changed = next !== current || (TABBED.has(next) && anchor !== currentAnchor);
   current = next;
+  currentAnchor = anchor;
   if (changed) render();
   const target = anchor && document.getElementById(`regra-${anchor}`);
   if (target) target.scrollIntoView({ block: 'start' });
@@ -920,7 +940,7 @@ const CHG = {
       const json = JSON.parse(await file.text());
       if (json?.app !== 'arsenal' || !json.data) throw new Error('Arquivo não é um backup do ARSENAL.');
       const d = json.data;
-      const n = `${(d.tasks || []).length} tarefas, ${(d.sessions || []).length} sessões, ${(d.journal || []).length} diários, ${(d.habits || []).length} hábitos`;
+      const n = `${(d.tasks || []).length} tarefas, ${(d.sessions || []).length} sessões, ${(d.journal || []).length} diários, ${(d.habits || []).length} hábitos, ${(d.cards || []).length} cartões`;
       const synced = syncState.user;
       if (!confirm(`Restaurar backup de ${json.exportedAt?.slice(0, 10) || 'data desconhecida'} (${n})? Os dados atuais deste aparelho serão substituídos.${synced ? ' Com a sincronização ligada, o backup também é enviado à nuvem e se junta ao que já está lá.' : ''}`)) return;
       // Os registros restaurados ganham a hora de agora para prevalecer na nuvem.
@@ -985,6 +1005,13 @@ const FORM = {
     render();
   },
 };
+
+/* ---------- Academia (regras 2, 6 e 14) e Metas (regras 9 e 12) ---------- */
+const ctx = { S, save, remove, uid, ymd, esc, toast, render, head, fmtShort, fmtMin, beep: () => { unlockAudio(); beep(); } };
+const academia = installAcademia(ctx);
+const metas = installMetas(ctx);
+const revisao = installRevisao(ctx);
+for (const m of [academia, metas, revisao]) { Object.assign(ACT, m.act); Object.assign(CHG, m.chg || {}); Object.assign(FORM, m.form); }
 
 /* ---------- Delegação de eventos ---------- */
 document.addEventListener('click', (e) => {
@@ -1055,7 +1082,7 @@ async function init() {
   }
   // Se o tempo acabou enquanto o app estava fechado, fecha a fase sem tocar alarme.
   if (T.running && T.endAt <= Date.now()) await timerComplete();
-  sync = createSync({ config: window.__arsenalTestConfig || firebaseConfig, hooks: syncHooks, backendFactory: window.__arsenalTestBackend });
+  sync = createSync({ config: window.__arsenalTestConfig || firebaseConfig, hooks: syncHooks, backendFactory: window.__arsenalTestBackend, schema: SCHEMA });
   syncState = sync.state;
   paintSync();
   window.addEventListener('hashchange', route);

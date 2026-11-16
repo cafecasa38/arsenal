@@ -23,7 +23,7 @@ export const RULES = [
     traps: ['Não resolve falta de clareza: se você não sabe o que fazer, classifique a tarefa antes (regra 3).', 'Não serve para decisões que exigem reflexão.'],
   },
   {
-    n: 2, title: 'A técnica de Feynman', tag: 'e', area: 'Academia', phase: 2,
+    n: 2, title: 'A técnica de Feynman', tag: 'e', area: 'Academia', phase: 1,
     lead: 'Escolha um conceito, explique como se ensinasse uma criança de 12 anos, identifique onde trava e reaprenda essa parte.',
     how: [
       '<b>Escolha</b> um conceito específico: não “economia”, mas “como funcionam os juros compostos”.',
@@ -31,7 +31,7 @@ export const RULES = [
       '<b>Diagnostique</b>: marque onde travou ou onde usou uma palavra difícil sem explicar. Ali está a lacuna.',
       '<b>Reaprenda</b> só esses pontos na fonte e reescreva a explicação, mais curta e com uma analogia.',
     ],
-    app: 'Chega na <b>Fase 2 (Academia)</b>. Por enquanto, escreva a explicação numa nota e crie na casinha 2 uma tarefa “Reaprender: [lacuna]” para cada trava.',
+    app: 'Tela <b>Academia → Técnica de Feynman</b>: os 4 passos em sequência. Cada lacuna pode virar a tarefa “Reaprender: …” na casinha 2, e a explicação final vira um cartão de revisão espaçada.',
     tips: [
       'Feche o material antes de explicar. Senão vira um resumo copiado.',
       'Teste final: você consegue dar um exemplo que não estava na fonte?',
@@ -94,7 +94,7 @@ export const RULES = [
     traps: ['Ficar no celular durante a pausa: ela deixa de descansar.', 'Ser escravo do alarme em tarefas que exigem imersão longa.'],
   },
   {
-    n: 6, title: 'Recuperação ativa', tag: 'e', area: 'Academia', phase: 2,
+    n: 6, title: 'Recuperação ativa', tag: 'e', area: 'Academia', phase: 1,
     lead: 'Depois de ler um capítulo ou participar de uma reunião, feche as anotações, escreva tudo o que lembra e revise o que deixou passar.',
     how: [
       'Termine a leitura ou a reunião.',
@@ -102,7 +102,7 @@ export const RULES = [
       'Abra a fonte e compare. Marque o que faltou.',
       'Na próxima revisão, comece pelo que faltou.',
     ],
-    app: 'Chega na <b>Fase 2</b>, ligada à repetição espaçada. Por enquanto, crie na casinha 2 a tarefa “Recuperar: [capítulo]” para o dia seguinte.',
+    app: 'Tela <b>Academia → Recuperação ativa</b>: cronômetro de 5 minutos, campo para o que lembrou e campo para o que faltou. Na próxima vez com a mesma fonte, o app mostra o que faltou antes. Um cartão agenda as revisões.',
     tips: [
       'Depois de reuniões, escreva 3 decisões e os próximos passos, sem olhar a ata.',
       'Transforme o conteúdo em perguntas; responder é mais eficaz do que reler.',
@@ -150,7 +150,7 @@ export const RULES = [
     traps: ['Usar o bloco para e-mail e mensagens.', 'Deixar reuniões invadirem o horário: trate-o como inegociável.'],
   },
   {
-    n: 9, title: 'O pré-mortem', tag: 'e', area: 'Evolução', phase: 3,
+    n: 9, title: 'O pré-mortem', tag: 'e', area: 'Metas', phase: 1,
     lead: 'Antes de iniciar um projeto, imagine que se passaram 6 meses e ele fracassou completamente. Por quê?',
     how: [
       'Descreva o projeto e o resultado esperado.',
@@ -159,7 +159,7 @@ export const RULES = [
       'Classifique os motivos por probabilidade e impacto, e escolha os 3 piores.',
       'Para cada um, defina uma proteção e um sinal de alerta.',
     ],
-    app: 'O formulário estruturado chega na <b>Fase 3</b>. Por enquanto, cada proteção vira uma tarefa na casinha 2, com impacto 4 ou 5.',
+    app: 'Tela <b>Metas → Pré-mortem</b>: liste os motivos, classifique cada um por chance e impacto, e os 3 piores sobem sozinhos para receber proteção e sinal de alerta. Cada proteção vira tarefa na casinha 2 com um toque.',
     tips: [
       'Funciona sozinho. Em equipe, peça para cada pessoa escrever antes de falar.',
       'Inclua causas pessoais: perder o ânimo, falta de tempo, ficar doente.',
@@ -186,7 +186,7 @@ export const RULES = [
     traps: ['Escolher um gatilho que não acontece todo dia.', 'Empilhar cinco hábitos de uma vez.'],
   },
   {
-    n: 11, title: 'O princípio 80/20', tag: 'm', area: 'Tarefas', phase: 3,
+    n: 11, title: 'O princípio 80/20', tag: 'm', area: 'Tarefas', phase: 1,
     lead: '80% dos resultados vêm de 20% das ações. Elimine, delegue e reduza o tempo do resto.',
     how: [
       'Liste as atividades da semana.',
@@ -194,7 +194,7 @@ export const RULES = [
       'Identifique as poucas que geraram a maior parte do resultado.',
       'Proteja essas atividades e corte, delegue ou encurte as demais.',
     ],
-    app: 'Cada tarefa tem um campo <b>Impacto (1–5)</b>. A análise automática, que cruza impacto com tempo de foco, chega na <b>Fase 3</b>. Por enquanto, exporte os CSVs de tarefas e sessões em Dados e cruze no Excel.',
+    app: 'Cada tarefa tem um campo <b>Impacto (1–5)</b>. A <b>Revisão semanal</b> (link no Painel) mostra para onde foi o foco da semana, tarefa por tarefa, e quanto dele foi para tarefas de impacto 4–5. Para análises maiores, exporte os CSVs em Dados.',
     tips: [
       'A proporção raramente é exatamente 80/20. O que importa é a desigualdade, não o número.',
       'Faça essa análise uma vez por mês, com dados reais.',
@@ -203,7 +203,7 @@ export const RULES = [
     traps: ['Presumir quais são os 20% sem medir.', 'Cortar tarefas de manutenção que parecem inúteis, mas evitam problemas.'],
   },
   {
-    n: 12, title: 'A estratégia das duas listas', tag: 'h', area: 'Tarefas', phase: 3,
+    n: 12, title: 'A estratégia das duas listas', tag: 'h', area: 'Metas', phase: 1,
     lead: 'Escreva suas 5 principais metas do trimestre. Faça uma segunda lista com tudo o mais que tenta você, e evite essas coisas até concluir as 5. A clareza vem da eliminação.',
     how: [
       'Escreva até 25 metas ou desejos para o trimestre.',
@@ -211,7 +211,7 @@ export const RULES = [
       'O resto vai para a lista de ruído: evitar a todo custo.',
       'Só tire algo da lista de ruído depois de concluir as 5.',
     ],
-    app: 'A tela própria fica para depois. Por enquanto, cadastre as 5 metas como tarefas da casinha 2 com impacto 5. O ruído vai para a casinha 4.',
+    app: 'Tela <b>Metas → Duas listas</b>, por trimestre: escreva até 25, escolha 5 com ★. A lista de ruído fica <b>travada</b> até as 5 serem concluídas. Cada meta pode virar tarefa na casinha 2 com impacto 5.',
     tips: [
       'Revise as listas a cada trimestre, com o diário em mãos.',
       'Uma ideia nova vai para a lista de ruído: adiada, não descartada.',
@@ -238,7 +238,7 @@ export const RULES = [
     traps: ['Virar desabafo longo e cansativo.', 'Escrever mudanças vagas, que não dá para verificar no dia seguinte.'],
   },
   {
-    n: 14, title: 'Repetição espaçada', tag: 'e', area: 'Academia', phase: 2,
+    n: 14, title: 'Repetição espaçada', tag: 'e', area: 'Academia', phase: 1,
     lead: 'Depois de aprender algo novo, revise após 1 dia, 3 dias, 7 dias e 14 dias.',
     how: [
       'Registre o que aprendeu como perguntas e respostas curtas.',
@@ -246,7 +246,7 @@ export const RULES = [
       'Antes de olhar a resposta, tente lembrar (é a regra 6).',
       'Errou? Volte o cartão para o início do ciclo.',
     ],
-    app: 'A agenda automática de revisões chega na <b>Fase 2</b>, com intervalos que se ajustam aos seus acertos e erros. Por enquanto, use o Anki, como o próprio material sugere.',
+    app: 'Tela <b>Academia → Revisar cartões</b>: o cartão novo aparece no dia 1, 3, 7 e 14 e depois em intervalos maiores. “Errei” volta ao início; “Fácil” pula uma etapa. O Painel mostra quantos estão para hoje.',
     tips: [
       'Uma ideia por cartão. Cartão grande vira releitura.',
       'Escreva com as suas palavras, não copie da fonte.',
@@ -262,6 +262,7 @@ const ROUTINE = [
     ['10', 'Depois do café, escolha as <b>3 prioridades</b> no Painel.'],
     ['13', 'Leia a <b>mudança</b> que você decidiu ontem, no topo do Painel.'],
     ['3', 'Passe 5 minutos na <b>matriz</b>: o que é 1, o que é 2.'],
+    ['14', 'Revise os <b>cartões do dia</b> na Academia.'],
   ] },
   { when: 'Durante o dia', time: 'blocos', items: [
     ['8', '<b>Bloco profundo</b> de 2 a 4 h numa tarefa da casinha 2.'],
@@ -274,10 +275,10 @@ const ROUTINE = [
     ['10', 'Marque os <b>hábitos</b> do dia.'],
   ] },
   { when: 'Semana', time: '30 min', items: [
-    ['11', 'Exporte os CSVs e veja onde foi o <b>foco</b> e o que deu <b>resultado</b>.'],
-    ['12', 'Confira o andamento das <b>5 metas</b> do trimestre.'],
+    ['11', 'Faça a <b>revisão semanal</b> (Painel → Revisão semanal): veja para onde foi o <b>foco</b> e se foi para o que dá <b>resultado</b>.'],
+    ['12', 'Confira as <b>5 metas</b> do trimestre na tela Metas.'],
     ['9', 'Projeto novo à vista? Faça um <b>pré-mortem</b>.'],
-    ['13', 'Releia os diários da semana e procure <b>padrões</b>.'],
+    ['13', 'Na mesma revisão, releia os diários e escolha o <b>foco principal</b> da próxima semana.'],
   ] },
 ];
 
@@ -298,7 +299,7 @@ export function viewManual() {
 
   <section class="man-intro grid g3">
     <div class="card"><h2>Comece com três</h2><p>Na primeira semana, use só a <b>matriz</b> (3), o <b>Pomodoro</b> (5) e o <b>diário</b> (13). Acrescente uma regra por semana. Adotar as 14 de uma vez é o jeito mais rápido de abandonar todas.</p></div>
-    <div class="card"><h2>Execute, registre, melhore</h2><p>O app responde a três perguntas: <b>o que preciso fazer?</b> (Tarefas), <b>como executo com foco?</b> (Foco) e <b>estou evoluindo ou só ocupado?</b> (Diário, Hábitos e Painel).</p></div>
+    <div class="card"><h2>Execute, registre, melhore</h2><p>O app responde a três perguntas: <b>o que preciso fazer?</b> (Tarefas), <b>como executo com foco?</b> (Foco) e <b>estou evoluindo ou só ocupado?</b> (Diário, Hábitos e Painel). A <b>Academia</b> cuida do aprendizado e a tela <b>Metas</b>, do trimestre.</p></div>
     <div class="card"><h2>Nem toda regra pesa igual</h2><p class="man-legend">
       <span class="tag e">evidência</span> respaldo na pesquisa<br>
       <span class="tag h">heurística</span> regra prática útil, sem garantia<br>

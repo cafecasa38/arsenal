@@ -21,6 +21,9 @@ PWA offline baseada no PDF *O Arsenal de Alta Performance*. Sem dependências, s
 | 03 Foco | 1 contagem 5-4-3-2-1, 5 Pomodoro 25/5/20 com 4 ciclos, 8 checklist de trabalho profundo, histórico de sessões |
 | 04 Diário | 13 três perguntas; a mudança pode virar tarefa na casinha 2 |
 | 05 Hábitos | 10 "Depois de [gatilho], vou [novo hábito]", sequência e percentual em 30 dias |
+| 06 Academia | 14 cartões com revisão no dia 1, 3, 7 e 14 (depois intervalos maiores; "Errei" volta ao início), 2 Feynman em 4 passos (lacunas viram tarefas "Reaprender"), 6 recuperação ativa com cronômetro de 5 min e lembrete do que faltou da última vez |
+| 07 Metas | 12 duas listas por trimestre (até 25, escolha 5; o ruído fica travado até concluir as 5), 9 pré-mortem (motivos com chance × impacto; os 3 piores recebem proteção, sinal de alerta e tarefa) |
+| Revisão semanal | aberta pelo Painel e pelo Diário: números da semana, para onde foi o foco por tarefa e impacto (11, 80/20), releitura dos diários (13), limpeza da matriz, conferência das metas (12) e o foco principal da próxima semana, que fica no topo do Painel |
 | Manual | as 14 regras com passo a passo, uso no app, dicas, vantagens, armadilhas e grau de evidência, mais uma rotina diária e semanal. As etiquetas "Regra N" de cada tela abrem a regra no manual. O botão "Imprimir ou salvar em PDF" gera a versão impressa; uma cópia pronta está em `Manual_ARSENAL.pdf` |
 | Dados | backup e restauração em JSON, CSV para Excel (separador `;`), durações do Pomodoro, notificações e classificação das regras (evidência, heurística ou metáfora) |
 
@@ -36,4 +39,4 @@ Opcional, pelo Firebase (Google), no plano gratuito. Fica desligada até preench
 
 ## Arquivos
 
-`index.html` (estrutura), `styles.css` (visual), `app.js` (telas, lógica e Pomodoro), `db.js` (IndexedDB), `sw.js` (offline), `manifest.webmanifest` e `icon.svg` (instalação).
+`index.html` (estrutura), `styles.css` (visual), `app.js` (telas, lógica e Pomodoro), `academia.js`, `metas.js` e `revisao.js` (telas 06, 07 e revisão semanal), `db.js` (IndexedDB), `sw.js` (offline), `manifest.webmanifest` e `icon.svg` (instalação).
